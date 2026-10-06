@@ -30,7 +30,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#02051a;col
 .card h1{margin:0;font-size:clamp(31px,8vw,55px);letter-spacing:2px}.card h2{margin:5px 0}.card p{font-size:13px;line-height:1.5;opacity:.82}
 button{width:100%;padding:14px;border:0;border-radius:13px;background:#fff;color:#061020;font-weight:900;font-size:17px}
 #error{display:none}.err{white-space:pre-line;text-align:left;background:#0005;padding:11px;border-radius:10px;font-size:12px}
-#match{display:none}.matchgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.col{display:flex;flex-direction:column;gap:8px}.mi{min-height:50px;border:2px solid #fff4;border-radius:12px;padding:7px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;background:#06143dcc}.mi.target{border-color:#fff;box-shadow:0 0 20px #7cf8ff}.mi.matched{opacity:.4;border-color:#62ffb0}#finish{display:none}.final{font-size:50px;font-weight:900}
+.col{display:flex;flex-direction:column;gap:8px}#finish{display:none}.final{font-size:50px;font-weight:900}
 @media(max-width:600px){.top{top:5px;left:5px;right:5px}.brand{padding:5px 8px}.brand b{font-size:14px}.stat{min-width:50px;padding:3px 5px}.stat b{font-size:13px}#qbox{top:13%}.answer{min-height:48px;font-size:12px}}
 @media(orientation:landscape) and (max-height:500px){#qbox{top:19%}#answers{bottom:5%;grid-template-columns:repeat(4,1fr)}.answer{min-height:40px}}
 </style>
@@ -67,18 +67,6 @@ button{width:100%;padding:14px;border:0;border-radius:13px;background:#fff;color
   <div class="card"><h2>⚠️ RALAT</h2><div class="err" id="errmsg"></div><br><button onclick="location.reload()">CUBA SEMULA</button></div>
 </div>
 
-<div class="overlay" id="match">
-  <div class="card">
-    <h2>🪐 CABARAN ANGKASA: VERTEBRATA vs INVERTEBRATA</h2>
-    <p>Tuding haiwan di kiri dan tahan 0.6 saat. Kemudian tuding kategori yang betul di kanan dan tahan 0.6 saat.</p>
-    <div class="matchgrid">
-      <div class="col" id="words"></div>
-      <div class="col" id="cats"></div>
-    </div>
-    <p id="mstatus">Pilih haiwan.</p>
-  </div>
-</div>
-
 <div class="overlay" id="finish">
   <div class="card"><h1>🏆 TAMAT!</h1><p>PECUTAN AKHIR</p><div class="final" id="finalscore">0</div><p id="finalmsg"></p><button onclick="location.reload()">MAIN SEMULA</button></div>
 </div>
@@ -100,69 +88,18 @@ let stream=null, handLandmarker=null, lastTime=-1, ready=false;
 let pointer={x:0,y:0,visible:false}, target=null, targetAt=0;
 const HOLD=600;
 let score=0,combo=0,qi=0,particles=[];
-let matchMode=false,selectedWord=null,matched=0,currentMatch=null,matchTarget=null,matchAt=0;
 
 const questions=[
-  {
-    type:"PILIH JAWAPAN",
-    q:"Haiwan yang manakah ialah herbivor?",
-    answers:["🐯 Harimau","🐐 Kambing","🦅 Helang","🐊 Buaya"],
-    correct:1
-  },
-  {
-    type:"CARI HAIWAN",
-    q:"🔎 CARI HAIWAN\nCari haiwan yang merupakan KARNIVOR.",
-    answers:["🐐 Kambing","🐄 Lembu","🐯 Harimau","🐇 Arnab"],
-    correct:2
-  },
-  {
-    type:"SIAPA SAYA?",
-    q:"🕵️ SIAPA SAYA?\nSaya mempunyai bulu, melahirkan anak dan menyusukan anak. Siapakah saya?",
-    answers:["🐟 Ikan","🐔 Ayam","🐱 Kucing","🐸 Katak"],
-    correct:2
-  },
-  {
-    type:"ODD ONE OUT",
-    q:"🚨 ODD ONE OUT\nYang manakah BERBEZA daripada yang lain?",
-    answers:["🐐 Kambing","🐄 Lembu","🐇 Arnab","🐯 Harimau"],
-    correct:3
-  },
-  {
-    type:"PILIH JAWAPAN",
-    q:"Apakah fungsi utama rangka manusia?",
-    answers:["Membantu penghadaman","Menyokong dan melindungi badan","Menghasilkan makanan","Mengawal suhu badan"],
-    correct:1
-  },
-  {
-    type:"CARI HAIWAN",
-    q:"🔎 CARI HAIWAN\nCari haiwan yang bernafas menggunakan INSANG.",
-    answers:["🐟 Ikan","🐱 Kucing","🐔 Ayam","🦗 Belalang"],
-    correct:0
-  },
-  {
-    type:"SIAPA SAYA?",
-    q:"🕵️ SIAPA SAYA?\nSaya mempunyai tulang belakang dan merupakan haiwan yang menyusukan anak. Siapakah saya?",
-    answers:["🦋 Rama-rama","🐱 Kucing","🐟 Ikan","🐸 Katak"],
-    correct:1
-  },
-  {
-    type:"ODD ONE OUT",
-    q:"🚨 ODD ONE OUT\nYang manakah bukan karnivor?",
-    answers:["🐯 Harimau","🦁 Singa","🦅 Helang","🐐 Kambing"],
-    correct:3
-  },
-  {
-    type:"PILIH JAWAPAN",
-    q:"Manusia tergolong dalam kumpulan haiwan...",
-    answers:["Mamalia","Reptilia","Amfibia","Ikan"],
-    correct:0
-  },
-  {
-    type:"CABARAN AKHIR",
-    q:"🏆 CABARAN AKHIR\nHaiwan yang tidak mempunyai tulang belakang dikenali sebagai...",
-    answers:["Vertebrata","Mamalia","Invertebrata","Reptilia"],
-    correct:2
-  }
+  {type:"PILIH JAWAPAN",q:"Haiwan yang manakah ialah HERBIVOR?",a:["🐯 Harimau","🐐 Kambing","🦅 Helang","🐊 Buaya"],c:1},
+  {type:"CARI HAIWAN",q:"🔎 CARI HAIWAN\nCari haiwan yang merupakan KARNIVOR.",a:["🐐 Kambing","🐄 Lembu","🐯 Harimau","🐇 Arnab"],c:2},
+  {type:"SIAPA SAYA?",q:"🕵️ SIAPA SAYA?\nSaya mempunyai bulu, melahirkan anak dan menyusukan anak. Siapakah saya?",a:["🐟 Ikan","🐔 Ayam","🐱 Kucing","🐸 Katak"],c:2},
+  {type:"ODD ONE OUT",q:"🚨 ODD ONE OUT\nYang manakah BERBEZA daripada yang lain?",a:["🐐 Kambing","🐄 Lembu","🐇 Arnab","🐯 Harimau"],c:3},
+  {type:"PILIH JAWAPAN",q:"Apakah fungsi utama rangka manusia?",a:["Membantu penghadaman","Menyokong dan melindungi badan","Menghasilkan makanan","Mengawal suhu badan"],c:1},
+  {type:"CARI HAIWAN",q:"🔎 CARI HAIWAN\nCari haiwan yang bernafas menggunakan INSANG.",a:["🐟 Ikan","🐱 Kucing","🐔 Ayam","🦗 Belalang"],c:0},
+  {type:"SIAPA SAYA?",q:"🕵️ SIAPA SAYA?\nSaya mempunyai tulang belakang dan menyusukan anak. Siapakah saya?",a:["🦋 Rama-rama","🐱 Kucing","🐟 Ikan","🐸 Katak"],c:1},
+  {type:"ODD ONE OUT",q:"🚨 ODD ONE OUT\nYang manakah BUKAN karnivor?",a:["🐯 Harimau","🦁 Singa","🦅 Helang","🐐 Kambing"],c:3},
+  {type:"PILIH JAWAPAN",q:"Manusia tergolong dalam kumpulan haiwan...",a:["Mamalia","Reptilia","Amfibia","Ikan"],c:0},
+  {type:"CABARAN AKHIR",q:"🏆 CABARAN AKHIR\nHaiwan yang tidak mempunyai tulang belakang dikenali sebagai...",a:["Vertebrata","Mamalia","Invertebrata","Reptilia"],c:2}
 ];
 const matchingData=[
   {
@@ -326,8 +263,7 @@ function showQuestion(){
 }
 
 function next(){
-  qi++;
-  if(qi===5){beginMatch();return;}
+  questionIndex++;
   showQuestion();
 }
 
@@ -352,77 +288,18 @@ function answer(el){
 }
 
 
-function beginMatch(){
-  matchMode=true; selectedWord=null; matched=0;
-  currentMatch=matchingData[0];
-  $("words").innerHTML=""; $("cats").innerHTML="";
-  currentMatch.words.forEach(v=>makeMatch("words","word",v));
-  currentMatch.cats.forEach(v=>makeMatch("cats","cat",v));
-  $("mstatus").textContent="Pilih haiwan.";
-  $("match").style.display="flex";
-}
-
-function makeMatch(parent,type,value){
-  const d=document.createElement("div");
-  d.className="mi"; d.textContent=value;
-  d.dataset.type=type; d.dataset.value=value;
-  $(parent).appendChild(d);
-}
-
-function handleMatchPointer(){
-  const els=[...document.querySelectorAll(".mi:not(.matched)")];
-  const hit=els.find(el=>{
-    const r=el.getBoundingClientRect();
-    return pointer.x>=r.left&&pointer.x<=r.right&&pointer.y>=r.top&&pointer.y<=r.bottom;
-  });
-  if(!hit){matchTarget=null;matchAt=0;return}
-  if(matchTarget!==hit){
-    matchTarget=hit;matchAt=performance.now();
-    document.querySelectorAll(".mi").forEach(x=>x.classList.remove("target"));
-    hit.classList.add("target");
-  }
-  if(performance.now()-matchAt>=HOLD){
-    matchAction(hit);matchTarget=null;matchAt=0;
-  }
-}
-
-function matchAction(el){
-  if(el.classList.contains("matched"))return;
-  if(el.dataset.type==="word"){
-    selectedWord=el.dataset.value;
-    document.querySelectorAll(".mi").forEach(x=>x.classList.remove("target"));
-    el.classList.add("target");
-    $("mstatus").textContent="Haiwan dipilih. Sekarang pilih VERTEBRATA atau INVERTEBRATA.";
-    return;
-  }
-  if(el.dataset.type==="cat"&&selectedWord){
-    const correct=currentMatch.ok[selectedWord];
-    if(el.dataset.value===correct){
-      el.classList.add("matched");
-      [...document.querySelectorAll(".mi")].find(x=>x.dataset.type==="word"&&x.dataset.value===selectedWord)?.classList.add("matched");
-      matched++; combo++; score+=150; burst(el,true); applause();
-      selectedWord=null; updateStats();
-      $("mstatus").textContent="👏 Betul! Padanan berjaya.";
-      if(matched===currentMatch.words.length){
-        setTimeout(()=>{
-          $("match").style.display="none";
-          matchMode=false; qi=5; showQuestion();
-        },900);
-      }
-    }else{
-      combo=0; score=Math.max(0,score-30); updateStats();
-      $("mstatus").textContent="✗ Salah kategori. Cuba lagi.";
-    }
-  }
-}
-
 function process(result){
   pointer.visible=false;
-  if(!result?.landmarks?.length){resetTarget();return}
-  const p=result.landmarks[0][8];
-  if(!p){resetTarget();return}
-  pointer.x=(1-p.x)*innerWidth;pointer.y=p.y*innerHeight;pointer.visible=true;
-  if(matchMode) handleMatchPointer(); else handleAnswerPointer();
+  if(!result || !result.landmarks || !result.landmarks.length){
+    resetTarget();
+    return;
+  }
+  const tip=result.landmarks[0][8];
+  if(!tip)return;
+  pointer.x=(1-tip.x)*innerWidth;
+  pointer.y=tip.y*innerHeight;
+  pointer.visible=true;
+  handleAnswerPointer();
 }
 
 function handleAnswerPointer(){
@@ -435,13 +312,6 @@ function handleAnswerPointer(){
   if(p>=1)answer(hit);
 }
 
-function handleMatchPointer(){
-  const els=[...document.querySelectorAll(".mi:not(.matched)")];
-  const hit=els.find(el=>{const r=el.getBoundingClientRect();return pointer.x>=r.left&&pointer.x<=r.right&&pointer.y>=r.top&&pointer.y<=r.bottom});
-  if(!hit){matchTarget=null;matchAt=0;return}
-  if(matchTarget!==hit){matchTarget=hit;matchAt=performance.now();document.querySelectorAll(".mi").forEach(x=>x.classList.remove("target"));hit.classList.add("target")}
-  if(performance.now()-matchAt>=HOLD){matchAction(hit);matchTarget=null;matchAt=0}
-}
 
 function resetTarget(){
   if(target)target.classList.remove("lock");
